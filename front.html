@@ -6,13 +6,15 @@
     <title>vmstat Stream Viewer</title>
   </head>
   <body>
-    <div id="status">Connecting...</div>
+    <div id="status"></div>
     <script>
+      const loadingsvg = '<svg width="16"height="16"viewBox="0 0 16 16"xmlns="http://www.w3.org/2000/svg"><g fill="none"fill-rule="evenodd"><circle cx="8"cy="8"r="7"stroke="#ccc"stroke-width="2"/><path d="M15 8Q14.3,14.3,8,15"stroke="#000"stroke-width="2"><animateTransform attributeName="transform"type="rotate"from="0 8 8"to="360 8 8"dur="500ms"repeatCount="indefinite"/></path></g></svg>';
       const cols = "r,b,swpd,free,buff,cache,si,so,bi,bo,in,cs,us,sy,id,wa,st,gu".split(",");
       const statusEl = document.getElementById("status");
-
+      
       const socket = new WebSocket(`ws://${location.host}/ws`);
-
+      statusEl.innerHTML = loadingsvg + "Connecting...";
+      
       let lastrecieve = Date.now();
 
       function updateView(ctx, histories, title) {
@@ -67,7 +69,7 @@
       }
 
       socket.addEventListener("open", () => {
-        statusEl.innerText = "Online";
+        statusEl.innerHTML = loadingsvg+ "Connected. waiting for vmstat histories...";
       });
 
       function initializeElements() {
@@ -92,13 +94,13 @@
             histories.shift();
             histories.push(element);
           });
+          statusEl.innerText = "✅️Online";
         } else {
           histories.shift();
           histories.push(latestdata);
         }
         console.log(latestdata, histories);
         lastrecieve = Date.now();
-        statusEl.innerText = "Online";
       });
       function updateAll() {
         try {
@@ -118,11 +120,11 @@
       updateAll();
 
       socket.addEventListener("close", () => {
-        statusEl.innerText = "Disconnected";
+        statusEl.innerText = "❌️Disconnected";
       });
 
       socket.addEventListener("error", () => {
-        statusEl.innerText = "Connection error";
+        statusEl.innerText = "⛔️Connection error";
       });
     </script>
   </body>
