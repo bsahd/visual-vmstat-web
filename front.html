@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>vmstat Stream Viewer</title>
+  </head>
+  <body>
+    <div id="status">Connecting...</div>
+    <script>
+      const cols = "r,b,swpd,free,buff,cache,si,so,bi,bo,in,cs,us,sy,id,wa,st,gu".split(",");
+      const statusEl = document.getElementById("status");
+
+      const socket = new WebSocket(`ws://${location.host}/ws`);
+
+      let lastrecieve = Date.now();
+
+      function updateView(ctx, histories, title) {
+        ctx.clearRect(0, 0, 480, 216);
+        const max = Math.max(...histories, 1);
+        ctx.fillStyle = "#0008";
+        ctx.font = "32px sans-serif";
+        ctx.fillText(title, 0, 32);
+        ctx.fillStyle = "black";
+        ctx.strokeStyle = "gray";
+        ctx.lineWidth = 1;
+        ctx.font = "12px sans-serif";
+        ctx.fillText(((max / 4) * 4).toFixed(0), 201, 16);
+        ctx.beginPath();
+        ctx.moveTo(0, 15.5);
+        ctx.lineTo(200, 15.5);
+        ctx.stroke();
+        ctx.fillText(((max / 4) * 3).toFixed(0), 201, 66);
+        ctx.beginPath();
+        ctx.moveTo(0, 65.5);
+        ctx.lineTo(200, 65.5);
+        ctx.stroke();
+        ctx.fillText(((max / 4) * 2).toFixed(0), 201, 116);
+        ctx.beginPath();
+        ctx.moveTo(0, 115.5);
+        ctx.lineTo(200, 115.5);
+        ctx.stroke();
+        ctx.fillText(((max / 4) * 1).toFixed(0), 201, 166);
+        ctx.beginPath();
+        ctx.moveTo(0, 165.5);
+        ctx.lineTo(200, 165.5);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, 215.5);
+        ctx.lineTo(200, 215.5);
+        ctx.stroke();
+        ctx.strokeStyle = "black";
+        const shift = Math.min(((Date.now() - lastrecieve) / 1000) * 4, 4);
+        histories.forEach((d, i) => {
+          if (i == 50) {
+            ctx.fillStyle = "white";
+            ctx.fillRect(201, 216 - (d / max) * 200 - 11, ctx.measureText(d.toFixed(0)).width, 13);
+            ctx.fillStyle = "blue";
+            ctx.fillText(d.toFixed(0), 201, 216 - (d / max) * 200);
+          } else if (d != -1) {
+            ctx.beginPath();
+            ctx.moveTo(i * 4 - shift, 215.5 - (d / max) * 200);
+            ctx.lineTo((i + 1) * 4 - shift, 215.5 - ((histories[i + 1] ?? d) / max) * 200);
+            ctx.stroke();
+          }
+        });
+      }
+
+      socket.addEventListener("open", () => {
+        statusEl.innerText = "Online";
+      });
+
+      function initializeElements() {
+        cols.forEach((v) => {
+          const el = document.createElement("canvas");
+          el.id = "v_" + v;
+          el.width = "256";
+          el.height = "216";
+          document.body.appendChild(el);
+        });
+      }
+      initializeElements();
+
+      let histories = Array.from({ length: 51 }, () =>
+        Object.fromEntries(cols.map((a) => [a, -1])),
+      );
+
+      socket.addEventListener("message", (event) => {
+        latestdata = JSON.parse(event.data);
+        if (Array.isArray(latestdata)) {
+          latestdata.forEach((element) => {
+            histories.shift();
+            histories.push(element);
+          });
+        } else {
+          histories.shift();
+          histories.push(latestdata);
+        }
+        console.log(latestdata, histories);
+        lastrecieve = Date.now();
+        statusEl.innerText = "Online";
+      });
+      function updateAll() {
+        try {
+          if (histories) {
+            cols.map((col) => {
+              updateView(
+                document.getElementById("v_" + col).getContext("2d"),
+                Array.from({ length: 51 }, (v, i) => histories[i][col]),
+                col,
+              );
+            });
+          }
+        } finally {
+          window.requestAnimationFrame(updateAll);
+        }
+      }
+      updateAll();
+
+      socket.addEventListener("close", () => {
+        statusEl.innerText = "Disconnected";
+      });
+
+      socket.addEventListener("error", () => {
+        statusEl.innerText = "Connection error";
+      });
+    </script>
+  </body>
+</html>

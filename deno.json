@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@hono/hono": "jsr:@hono/hono@^4.8.12",
+    "@std/streams": "jsr:@std/streams@^1.0.10"
+  },
+  "tasks":{
+  "start":"deno run --allow-run=vmstat -N=0.0.0.0:8000 -R=front.html server.ts"
+  }
+}
