@@ -26,8 +26,8 @@
         const ctx = elem.getContext("2d");
         ctx.clearRect(0, 0, 480, 216);
         const realmax = Math.max(...histories, 1);
-        if(elem.dataset["smoothmax"] == "NaN"){
-          elem.dataset["smoothmax"] = realmax
+        if (elem.dataset["smoothmax"] == "NaN") {
+          elem.dataset["smoothmax"] = realmax;
         }
         elem.dataset["smoothmax"] = Math.ceil(
           parseFloat(elem.dataset["smoothmax"]) +
@@ -128,12 +128,10 @@
           histories.shift();
           histories.push(latestdata);
         }
-        console.log(latestdata, histories);
         lastrecieve = Date.now();
       });
       function updateAll(delay, d2) {
         try {
-          console.log(delay - d2);
           if (histories) {
             cols.map((col) => {
               updateView(
